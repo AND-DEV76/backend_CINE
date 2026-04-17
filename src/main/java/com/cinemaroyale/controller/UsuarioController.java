@@ -14,7 +14,7 @@ import java.util.List;
 @CrossOrigin
 public class UsuarioController {
 
-    private final UsuarioService usuarioService;
+       private final UsuarioService usuarioService;
 
     public UsuarioController(UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
@@ -44,5 +44,12 @@ public class UsuarioController {
     public void eliminar(@PathVariable Integer id) {
         usuarioService.eliminar(id);
     }
+
+    // 🔐 LOGIN CORRECTO
+    @PostMapping("/login")
+    public Usuario login(@RequestBody UsuarioDTO dto) {
+        return usuarioService.login(dto);
+    }
+    
     
 }

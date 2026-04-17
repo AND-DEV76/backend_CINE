@@ -59,28 +59,47 @@ public class UsuarioService {
     }
 
     public Usuario actualizar(Integer id, UsuarioDTO dto) {
-        Usuario usuario = obtenerPorId(id);
 
-        usuario.setUsername(dto.getUsername());
-        usuario.setNombre(dto.getNombre());
-        usuario.setEmail(dto.getEmail());
+    Usuario user = usuarioRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        if (dto.getPassword() != null) {
-            usuario.setPasswordHash(hashPassword(dto.getPassword()));
-        }
+    user.setUsername(dto.getUsername());
+    user.setNombre(dto.getNombre());
+    user.setEmail(dto.getEmail());
 
-        if (dto.getIdRol() != null) {
-            Rol rol = rolRepository.findById(dto.getIdRol()).orElseThrow();
-            usuario.setRol(rol);
-        }
-
-        usuario.setActivo(dto.getActivo());
-
-        return usuarioRepository.save(usuario);
+    // 🔐 SOLO si viene password
+    if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+        user.setPasswordHash(hashPassword(dto.getPassword()));
     }
+
+    // 🔥 IMPORTANTE: NO TOCAR activo si no viene
+    // user.setActivo(...) ❌ NO lo pongas si no viene
+
+    // 🔥 Rol
+    Rol rol = rolRepository.findById(dto.getIdRol())
+            .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+
+    user.setRol(rol);
+
+    return usuarioRepository.save(user);
+}
 
     public void eliminar(Integer id) {
         usuarioRepository.deleteById(id);
     }
     
+
+    public Usuario login(UsuarioDTO dto) {
+
+    Usuario user = usuarioRepository.findByUsername(dto.getUsername())
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+    String hashed = hashPassword(dto.getPassword());
+
+    if (!user.getPasswordHash().equals(hashed)) {
+        throw new RuntimeException("Credenciales incorrectas");
+    }
+
+    return user;
+}
 }
