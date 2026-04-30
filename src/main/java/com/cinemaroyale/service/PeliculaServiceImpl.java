@@ -16,6 +16,7 @@ import com.cinemaroyale.model.Clasificacion;
 import com.cinemaroyale.model.Pelicula;
 import com.cinemaroyale.model.Usuario;
 import com.cinemaroyale.repository.ClasificacionRepository;
+import com.cinemaroyale.repository.PeliculaGeneroRepository;
 import com.cinemaroyale.repository.PeliculaRepository;
 import com.cinemaroyale.repository.UsuarioRepository;
 
@@ -32,7 +33,9 @@ public class PeliculaServiceImpl implements PeliculaService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    
+    @Autowired
+private PeliculaGeneroRepository peliculaGeneroRepository;
+
 
     @Override
     public PeliculaResponseDTO crear(PeliculaRequestDTO dto) {
@@ -104,6 +107,9 @@ public class PeliculaServiceImpl implements PeliculaService {
 
     @Override
     public void eliminar(Integer id) {
+
+           // 🔥 1. BORRAR RELACIONES (tabla intermedia)
+    peliculaGeneroRepository.deleteByPeliculaId(id);
         peliculaRepository.deleteById(id);
     }
 
@@ -134,20 +140,38 @@ public class PeliculaServiceImpl implements PeliculaService {
     }
 }
 
-    private PeliculaResponseDTO mapToDTO(Pelicula p) {
 
-        PeliculaResponseDTO dto = new PeliculaResponseDTO();
+private PeliculaResponseDTO mapToDTO(Pelicula p) {
 
-        dto.setIdPelicula(p.getIdPelicula());
-        dto.setNombre(p.getNombre());
-        dto.setDuracion(p.getDuracion());
-        dto.setClasificacion(p.getClasificacion().getNombre());
-        dto.setDescripcion(p.getDescripcion());
-        dto.setPoster(p.getPoster());
-        dto.setCreadoPor(p.getCreadoPor().getNombre());
+    PeliculaResponseDTO dto = new PeliculaResponseDTO();
 
-        return dto;
-    }
+    dto.setIdPelicula(p.getIdPelicula());
+    dto.setNombre(p.getNombre());
+    dto.setDuracion(p.getDuracion());
+    dto.setClasificacion(p.getClasificacion().getNombre());
+    dto.setDescripcion(p.getDescripcion());
+    dto.setPoster(p.getPoster());
+    dto.setCreadoPor(p.getCreadoPor().getNombre());
+
+    // 🔥 AQUÍ YA NO FALLA
+    List<String> generos = peliculaGeneroRepository
+            .findGenerosByPeliculaId(p.getIdPelicula());
+
+    dto.setGeneros(generos);
+
+
+    
+
+    return dto;
+
+
+
+    
+
+}
+
+
+
 
 
 

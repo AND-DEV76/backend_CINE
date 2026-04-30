@@ -1,5 +1,7 @@
 package com.cinemaroyale.dto;
 
+import java.util.List;
+
 import lombok.Data;
 
 @Data
@@ -13,5 +15,8 @@ public class PeliculaResponseDTO {
     private String descripcion;
     private String poster;
     private String creadoPor;
-    
+    private List<String> generos;
+
+    private Integer idClasificacion;
+
 }

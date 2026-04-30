@@ -15,4 +15,8 @@ public interface PeliculaService {
     PeliculaResponseDTO actualizar(Integer id, PeliculaRequestDTO dto);
 
     void eliminar(Integer id);
+
+   
+
+    
 }

@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import com.cinemaroyale.dto.ClasificacionDTO;
 import com.cinemaroyale.model.Clasificacion;
 import com.cinemaroyale.repository.ClasificacionRepository;
-
+import com.cinemaroyale.repository.PeliculaRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,8 +14,14 @@ public class ClasificacionServiceImpl implements ClasificacionService {
 
     private final ClasificacionRepository repository;
 
-    public ClasificacionServiceImpl(ClasificacionRepository repository) {
+    // ✅ NUEVO
+    private final PeliculaRepository peliculaRepository;
+
+    // ✅ Constructor actualizado
+    public ClasificacionServiceImpl(ClasificacionRepository repository,
+                                   PeliculaRepository peliculaRepository) {
         this.repository = repository;
+        this.peliculaRepository = peliculaRepository;
     }
 
     private ClasificacionDTO mapToDTO(Clasificacion c) {
@@ -68,6 +74,18 @@ public class ClasificacionServiceImpl implements ClasificacionService {
 
     @Override
     public void delete(Integer id) {
+
+        // 🔥 VALIDACIÓN
+        boolean enUso = peliculaRepository.existsByClasificacionId(id);
+
+        if (enUso) {
+            throw new RuntimeException(
+                "No se puede eliminar la clasificación porque está en uso por una película"
+            );
+        }
+
         repository.deleteById(id);
     }
 }
+
+    
