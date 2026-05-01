@@ -3,12 +3,7 @@ package com.cinemaroyale.service;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import com.cinemaroyale.dto.PeliculaRequestDTO;
 import com.cinemaroyale.dto.PeliculaResponseDTO;
@@ -34,8 +29,10 @@ public class PeliculaServiceImpl implements PeliculaService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-private PeliculaGeneroRepository peliculaGeneroRepository;
+    private PeliculaGeneroRepository peliculaGeneroRepository;
 
+    @Autowired
+    private CloudinaryService cloudinaryService;
 
     @Override
     public PeliculaResponseDTO crear(PeliculaRequestDTO dto) {
@@ -46,14 +43,14 @@ private PeliculaGeneroRepository peliculaGeneroRepository;
         Usuario usuario = usuarioRepository.findById(dto.getCreadoPor())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        String nombreImagen = guardarImagen(dto.getPoster());
+        String posterUrl = cloudinaryService.uploadImage(dto.getPoster());
 
         Pelicula pelicula = new Pelicula();
         pelicula.setNombre(dto.getNombre());
         pelicula.setDuracion(dto.getDuracion());
         pelicula.setClasificacion(clasificacion);
         pelicula.setDescripcion(dto.getDescripcion());
-        pelicula.setPoster(nombreImagen);
+        pelicula.setPoster(posterUrl); 
         pelicula.setCreadoPor(usuario);
 
         peliculaRepository.save(pelicula);
@@ -96,8 +93,11 @@ private PeliculaGeneroRepository peliculaGeneroRepository;
         pelicula.setCreadoPor(usuario);
 
         if (dto.getPoster() != null && !dto.getPoster().isEmpty()) {
-            String nombreImagen = guardarImagen(dto.getPoster());
-            pelicula.setPoster(nombreImagen);
+            if (pelicula.getPoster() != null) {
+                cloudinaryService.deleteImage(pelicula.getPoster());
+            }
+            String posterUrl = cloudinaryService.uploadImage(dto.getPoster());
+            pelicula.setPoster(posterUrl);
         }
 
         peliculaRepository.save(pelicula);
@@ -107,39 +107,16 @@ private PeliculaGeneroRepository peliculaGeneroRepository;
 
     @Override
     public void eliminar(Integer id) {
-
-           // 🔥 1. BORRAR RELACIONES (tabla intermedia)
-    peliculaGeneroRepository.deleteByPeliculaId(id);
+        Pelicula pelicula = peliculaRepository.findById(id).orElse(null);
+        if (pelicula != null && pelicula.getPoster() != null) {
+            cloudinaryService.deleteImage(pelicula.getPoster());
+        }
+        
+        // 🔥 1. BORRAR RELACIONES (tabla intermedia)
+        peliculaGeneroRepository.deleteByPeliculaId(id);
+        
         peliculaRepository.deleteById(id);
     }
-
-    // 🔥 GUARDAR IMAGEN
-   private String guardarImagen(MultipartFile archivo) {
-
-    if (archivo == null || archivo.isEmpty()) {
-        return null;
-    }
-
-    String ruta = System.getProperty("user.dir") + "/uploads/";
-    String nombreArchivo = UUID.randomUUID() + "_" + archivo.getOriginalFilename();
-
-    try {
-        File carpeta = new File(ruta);
-        if (!carpeta.exists()) {
-            carpeta.mkdirs();
-        }
-
-        File destino = new File(ruta + nombreArchivo);
-        archivo.transferTo(destino);
-
-        return nombreArchivo;
-
-    } catch (IOException e) {
-        e.printStackTrace(); // 🔥 IMPORTANTE
-        throw new RuntimeException("Error al guardar imagen");
-    }
-}
-
 
 private PeliculaResponseDTO mapToDTO(Pelicula p) {
 
@@ -169,6 +146,7 @@ private PeliculaResponseDTO mapToDTO(Pelicula p) {
     
 
 }
+
 
 
 
