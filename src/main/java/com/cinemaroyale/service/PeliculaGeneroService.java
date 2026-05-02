@@ -45,7 +45,7 @@ public class PeliculaGeneroService {
         return repository.save(relacion);
     }
 
-    // LISTAR TODO
+    
     public List<PeliculaGenero> listar() {
         return repository.findAll();
     }
