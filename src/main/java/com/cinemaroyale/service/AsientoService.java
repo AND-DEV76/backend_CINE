@@ -74,4 +74,20 @@ public AsientoDTO actualizarDTO(Integer id, AsientoDTO dto) {
 
     return dto;
 }
+
+public List<AsientoDTO> listarPorSala(Integer idSala) {
+
+    List<Asiento> lista = asientoRepository.findBySala_IdSala(idSala);
+
+    return lista.stream().map(a -> {
+        AsientoDTO dto = new AsientoDTO();
+        dto.setIdAsiento(a.getIdAsiento());
+        dto.setFila(a.getFila());
+        dto.setNumero(a.getNumero());
+        return dto;
+    }).toList();
+}
+
+
+
 }

@@ -12,8 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cinemaroyale.dto.AsientoDTO;
 import com.cinemaroyale.dto.SalaDTO;
-
+import com.cinemaroyale.service.AsientoService;
 import com.cinemaroyale.service.SalaService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class SalaController {
 
         private final SalaService salaService;
+        private final AsientoService asientoService;
 
     @PostMapping
     public ResponseEntity<?> crear(@RequestBody SalaDTO dto) {
@@ -49,5 +51,11 @@ public SalaDTO actualizar(@PathVariable Integer id, @RequestBody SalaDTO dto) {
     public void eliminar(@PathVariable Integer id) {
         salaService.eliminar(id);
     }
+
+
+    @GetMapping("/{id}/asientos")
+public List<AsientoDTO> obtenerAsientos(@PathVariable Integer id) {
+    return asientoService.listarPorSala(id);
+}
     
 }
