@@ -1,8 +1,7 @@
 package com.cinemaroyale.model;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,7 +30,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Funcion {
 
-     @Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_funcion")
     private Integer idFuncion;
@@ -48,6 +47,5 @@ public class Funcion {
     private LocalDate fecha;
 
     @Column(name = "hora", nullable = false)
-private LocalDateTime hora;
-    
+    private LocalTime hora;
 }

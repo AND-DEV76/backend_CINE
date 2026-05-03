@@ -1,41 +1,52 @@
 package com.cinemaroyale.service;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.cinemaroyale.dto.FuncionRequestDTO;
 import com.cinemaroyale.dto.FuncionResponseDTO;
 import com.cinemaroyale.exceptions.ResourceNotFoundException;
+import com.cinemaroyale.exceptions.DuplicateResourceException;
+import com.cinemaroyale.model.Asiento;
+import com.cinemaroyale.model.EstadoAsiento;
 import com.cinemaroyale.model.Funcion;
 import com.cinemaroyale.model.Pelicula;
 import com.cinemaroyale.model.Sala;
+import com.cinemaroyale.repository.AsientoRepository;
+import com.cinemaroyale.repository.EstadoAsientoRepository;
 import com.cinemaroyale.repository.FuncionRepository;
 import com.cinemaroyale.repository.PeliculaRepository;
 import com.cinemaroyale.repository.SalaRepository;
-import com.cinemaroyale.exceptions.DuplicateResourceException;
-import java.util.List;
 
 @Service
 public class FuncionServiceImpl implements FuncionService {
 
-   
     private final FuncionRepository funcionRepo;
     private final PeliculaRepository peliculaRepo;
     private final SalaRepository salaRepo;
+    private final AsientoRepository asientoRepo;
+    private final EstadoAsientoRepository estadoAsientoRepo;
 
     public FuncionServiceImpl(FuncionRepository funcionRepo,
                               PeliculaRepository peliculaRepo,
-                              SalaRepository salaRepo) {
+                              SalaRepository salaRepo,
+                              AsientoRepository asientoRepo,
+                              EstadoAsientoRepository estadoAsientoRepo) {
         this.funcionRepo = funcionRepo;
         this.peliculaRepo = peliculaRepo;
         this.salaRepo = salaRepo;
+        this.asientoRepo = asientoRepo;
+        this.estadoAsientoRepo = estadoAsientoRepo;
     }
 
     // =========================
     // CREATE
     // =========================
     @Override
+    @Transactional
     public FuncionResponseDTO crear(FuncionRequestDTO dto) {
 
         Pelicula pelicula = peliculaRepo.findById(dto.getIdPelicula())
@@ -61,9 +72,19 @@ public class FuncionServiceImpl implements FuncionService {
         funcion.setFecha(dto.getFecha());
         funcion.setHora(dto.getHora());
 
-        funcionRepo.save(funcion);
+        Funcion funcionGuardada = funcionRepo.save(funcion);
 
-        return mapToDTO(funcion);
+        // Crear EstadoAsiento para todos los asientos de la sala
+        List<Asiento> asientos = asientoRepo.findBySala_IdSala(sala.getIdSala());
+        for (Asiento asiento : asientos) {
+            EstadoAsiento estado = new EstadoAsiento();
+            estado.setFuncion(funcionGuardada);
+            estado.setAsiento(asiento);
+            estado.setEstado("DISPONIBLE");
+            estadoAsientoRepo.save(estado);
+        }
+
+        return mapToDTO(funcionGuardada);
     }
 
     // =========================
@@ -72,6 +93,14 @@ public class FuncionServiceImpl implements FuncionService {
     @Override
     public List<FuncionResponseDTO> listar() {
         return funcionRepo.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<FuncionResponseDTO> listarPorPelicula(Integer idPelicula) {
+        return funcionRepo.findByPeliculaIdPelicula(idPelicula)
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
@@ -119,12 +148,34 @@ public class FuncionServiceImpl implements FuncionService {
     // DELETE
     // =========================
     @Override
+    @Transactional
     public void eliminar(Integer id) {
-
+        List<EstadoAsiento> estados = estadoAsientoRepo.findByFuncionIdFuncion(id);
+        estadoAsientoRepo.deleteAll(estados);
+        
         Funcion funcion = funcionRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Función no existe"));
 
         funcionRepo.delete(funcion);
+    }
+
+    @Override
+    @Transactional
+    public void fixAsientos() {
+        List<Funcion> funciones = funcionRepo.findAll();
+        for (Funcion funcion : funciones) {
+            List<EstadoAsiento> estados = estadoAsientoRepo.findByFuncionIdFuncion(funcion.getIdFuncion());
+            if (estados.isEmpty()) {
+                List<Asiento> asientos = asientoRepo.findBySala_IdSala(funcion.getSala().getIdSala());
+                for (Asiento asiento : asientos) {
+                    EstadoAsiento estado = new EstadoAsiento();
+                    estado.setFuncion(funcion);
+                    estado.setAsiento(asiento);
+                    estado.setEstado("DISPONIBLE");
+                    estadoAsientoRepo.save(estado);
+                }
+            }
+        }
     }
 
     // =========================
@@ -148,5 +199,5 @@ public class FuncionServiceImpl implements FuncionService {
         dto.setHora(f.getHora());
 
         return dto;
-    }    
+    }
 }

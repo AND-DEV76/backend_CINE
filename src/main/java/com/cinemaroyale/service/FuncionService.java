@@ -14,4 +14,8 @@ public interface FuncionService {
     FuncionResponseDTO actualizar(Integer id, FuncionRequestDTO dto);
 
     void eliminar(Integer id);
+
+    List<FuncionResponseDTO> listarPorPelicula(Integer idPelicula);
+
+    void fixAsientos();
 }
