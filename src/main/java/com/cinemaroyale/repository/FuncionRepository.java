@@ -6,30 +6,26 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface FuncionRepository extends JpaRepository<Funcion, Integer> {
 
-    Optional<Funcion> findBySala_IdSalaAndFechaAndHora(
+    Optional<Funcion> findBySala_IdSalaAndFechaHora(
             Integer idSala,
-            LocalDate fecha,
-            LocalTime hora
+            LocalDateTime fechaHora
     );
 
     @Query("""
         SELECT f FROM Funcion f
         WHERE f.sala.idSala = :idSala
-        AND f.fecha = :fecha
-        AND f.hora = :hora
+        AND f.fechaHora = :fechaHora
     """)
     Optional<Funcion> buscarDuplicado(
             @Param("idSala") Integer idSala,
-            @Param("fecha") LocalDate fecha,
-            @Param("hora") LocalTime hora
+            @Param("fechaHora") LocalDateTime fechaHora
     );
 
     List<Funcion> findByPeliculaIdPelicula(Integer idPelicula);

@@ -11,11 +11,4 @@ public class WebConfig implements WebMvcConfigurer {
     // Ya no necesitamos servir archivos estáticos locales.
     // Las imágenes ahora se cargan directamente desde Cloudinary CDN.
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOrigins("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE")
-                .allowedHeaders("*");
-    }
 }

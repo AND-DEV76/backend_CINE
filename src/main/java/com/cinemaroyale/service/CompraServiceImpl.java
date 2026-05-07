@@ -114,8 +114,8 @@ public class CompraServiceImpl implements CompraService {
         dto.setIdBoleto(b.getIdBoleto());
         dto.setNombrePelicula(b.getFuncion().getPelicula().getNombre());
         dto.setNumeroSala(b.getFuncion().getSala().getNumeroSala());
-        dto.setFecha(b.getFuncion().getFecha());
-        dto.setHora(b.getFuncion().getHora());
+        dto.setFecha(b.getFuncion().getFechaHora().toLocalDate());
+        dto.setHora(b.getFuncion().getFechaHora().toLocalTime());
         dto.setFila(b.getAsiento().getFila());
         dto.setNumeroAsiento(b.getAsiento().getNumero());
         dto.setPrecio(b.getPrecio());

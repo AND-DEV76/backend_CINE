@@ -1,8 +1,7 @@
 package com.cinemaroyale.dto;
 
+import java.time.LocalDateTime;
 import lombok.Data;
-import java.time.LocalDate;
-import java.time.LocalTime;
 
 @Data
 public class FuncionDTO {
@@ -11,6 +10,5 @@ public class FuncionDTO {
     private String nombrePelicula;
     private Integer idSala;
     private Integer numeroSala;
-    private LocalDate fecha;
-    private LocalTime hora;
+    private LocalDateTime fechaHora;
 }

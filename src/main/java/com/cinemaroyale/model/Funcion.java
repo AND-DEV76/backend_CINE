@@ -1,7 +1,6 @@
 package com.cinemaroyale.model;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,7 +20,7 @@ import lombok.Setter;
 @Table(
     name = "Funcion",
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"id_sala", "fecha", "hora"})
+        @UniqueConstraint(columnNames = {"id_sala", "fecha_hora"})
     }
 )
 @Getter
@@ -43,9 +42,6 @@ public class Funcion {
     @JoinColumn(name = "id_sala", nullable = false)
     private Sala sala;
 
-    @Column(name = "fecha", nullable = false)
-    private LocalDate fecha;
-
-    @Column(name = "hora", nullable = false)
-    private LocalTime hora;
+    @Column(name = "fecha_hora", nullable = false)
+    private LocalDateTime fechaHora;
 }

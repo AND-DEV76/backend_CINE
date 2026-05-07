@@ -58,19 +58,17 @@ public class FuncionServiceImpl implements FuncionService {
         // 🔥 VALIDACIÓN DUPLICADO
         funcionRepo.buscarDuplicado(
                 dto.getIdSala(),
-                dto.getFecha(),
-                dto.getHora()
+                dto.getFechaHora()
         ).ifPresent(f -> {
             throw new DuplicateResourceException(
-                    "Ya existe una función en esta sala, fecha y hora"
+                    "Ya existe una función en esta sala y horario"
             );
         });
 
         Funcion funcion = new Funcion();
         funcion.setPelicula(pelicula);
         funcion.setSala(sala);
-        funcion.setFecha(dto.getFecha());
-        funcion.setHora(dto.getHora());
+        funcion.setFechaHora(dto.getFechaHora());
 
         Funcion funcionGuardada = funcionRepo.save(funcion);
 
@@ -124,20 +122,18 @@ public class FuncionServiceImpl implements FuncionService {
         // 🔥 VALIDACIÓN DUPLICADO (ignorando el mismo registro)
         funcionRepo.buscarDuplicado(
                 dto.getIdSala(),
-                dto.getFecha(),
-                dto.getHora()
+                dto.getFechaHora()
         ).ifPresent(existing -> {
             if (!existing.getIdFuncion().equals(id)) {
                 throw new DuplicateResourceException(
-                        "Conflicto: ya existe función en esa sala/fecha/hora"
+                        "Conflicto: ya existe función en esa sala y horario"
                 );
             }
         });
 
         funcion.setPelicula(pelicula);
         funcion.setSala(sala);
-        funcion.setFecha(dto.getFecha());
-        funcion.setHora(dto.getHora());
+        funcion.setFechaHora(dto.getFechaHora());
 
         funcionRepo.save(funcion);
 
@@ -195,8 +191,7 @@ public class FuncionServiceImpl implements FuncionService {
         dto.setIdSala(f.getSala().getIdSala());
         dto.setNumeroSala(f.getSala().getNumeroSala());
 
-        dto.setFecha(f.getFecha());
-        dto.setHora(f.getHora());
+        dto.setFechaHora(f.getFechaHora());
 
         return dto;
     }
