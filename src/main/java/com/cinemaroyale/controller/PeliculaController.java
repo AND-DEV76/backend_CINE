@@ -20,7 +20,7 @@ public class PeliculaController {
       @Autowired
     private PeliculaService peliculaService;
 
-    // 🔥 CREAR CON IMAGEN
+    // CREAR CON IMAGEN
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public PeliculaResponseDTO crear(@ModelAttribute PeliculaRequestDTO dto) {
         return peliculaService.crear(dto);
@@ -36,7 +36,7 @@ public class PeliculaController {
         return peliculaService.obtenerPorId(id);
     }
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public PeliculaResponseDTO actualizar(
             @PathVariable Integer id,
             @ModelAttribute PeliculaRequestDTO dto) {
