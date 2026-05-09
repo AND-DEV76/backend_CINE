@@ -129,12 +129,21 @@ private PeliculaResponseDTO mapToDTO(Pelicula p) {
     dto.setDescripcion(p.getDescripcion());
     dto.setPoster(p.getPoster());
     dto.setCreadoPor(p.getCreadoPor().getNombre());
+    
+    // Configurar idClasificacion para que el frontend pueda preseleccionarlo al editar
+    if (p.getClasificacion() != null) {
+        dto.setIdClasificacion(p.getClasificacion().getId_clasificacion());
+    }
 
     // 🔥 AQUÍ YA NO FALLA
     List<String> generos = peliculaGeneroRepository
             .findGenerosByPeliculaId(p.getIdPelicula());
+            
+    List<Integer> generosIds = peliculaGeneroRepository
+            .findGeneroIdsByPeliculaId(p.getIdPelicula());
 
     dto.setGeneros(generos);
+    dto.setGenerosIds(generosIds);
 
 
     

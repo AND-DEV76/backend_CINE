@@ -16,6 +16,7 @@ public class PeliculaResponseDTO {
     private String poster;
     private String creadoPor;
     private List<String> generos;
+    private List<Integer> generosIds;
 
     private Integer idClasificacion;
 

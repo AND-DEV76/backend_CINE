@@ -30,5 +30,8 @@ void deleteByPeliculaId(@Param("id") Integer id);
 @Query("SELECT pg.genero.nombre FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula = :id")
 List<String> findGenerosByPeliculaId(@Param("id") Integer id);
 
+@Query("SELECT pg.genero.id_genero FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula = :id")
+List<Integer> findGeneroIdsByPeliculaId(@Param("id") Integer id);
+
 
 }
