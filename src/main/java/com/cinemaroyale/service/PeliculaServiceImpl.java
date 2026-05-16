@@ -2,8 +2,12 @@ package com.cinemaroyale.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import com.cinemaroyale.dto.PeliculaRequestDTO;
 import com.cinemaroyale.dto.PeliculaResponseDTO;
@@ -50,7 +54,9 @@ public class PeliculaServiceImpl implements PeliculaService {
         pelicula.setDuracion(dto.getDuracion());
         pelicula.setClasificacion(clasificacion);
         pelicula.setDescripcion(dto.getDescripcion());
-        pelicula.setPoster(posterUrl); 
+        pelicula.setPoster(posterUrl);
+        pelicula.setTrailer(dto.getTrailer());
+        pelicula.setAnio(dto.getAnio());
         pelicula.setCreadoPor(usuario);
 
         peliculaRepository.save(pelicula);
@@ -59,14 +65,38 @@ public class PeliculaServiceImpl implements PeliculaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PeliculaResponseDTO> listar() {
-        return peliculaRepository.findAll()
-                .stream()
-                .map(this::mapToDTO)
+        List<Pelicula> peliculas = peliculaRepository.findAll();
+        if (peliculas.isEmpty()) return new ArrayList<>();
+
+        // Una sola query para obtener todos los generos de todas las peliculas
+        List<Integer> ids = peliculas.stream()
+                .map(Pelicula::getIdPelicula)
+                .collect(Collectors.toList());
+
+        List<Object[]> generoData = peliculaGeneroRepository.findGeneroDataByPeliculaIds(ids);
+
+        Map<Integer, List<String>> generoNombres = new HashMap<>();
+        Map<Integer, List<Integer>> generoIdsMap = new HashMap<>();
+
+        for (Object[] row : generoData) {
+            Integer idPelicula = (Integer) row[0];
+            String nombre = (String) row[1];
+            Integer idGenero = (Integer) row[2];
+            generoNombres.computeIfAbsent(idPelicula, k -> new ArrayList<>()).add(nombre);
+            generoIdsMap.computeIfAbsent(idPelicula, k -> new ArrayList<>()).add(idGenero);
+        }
+
+        return peliculas.stream()
+                .map(p -> mapToDTOWithGeneros(p,
+                        generoNombres.getOrDefault(p.getIdPelicula(), new ArrayList<>()),
+                        generoIdsMap.getOrDefault(p.getIdPelicula(), new ArrayList<>())))
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PeliculaResponseDTO obtenerPorId(Integer id) {
         Pelicula pelicula = peliculaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Película no encontrada"));
@@ -90,6 +120,8 @@ public class PeliculaServiceImpl implements PeliculaService {
         pelicula.setDuracion(dto.getDuracion());
         pelicula.setClasificacion(clasificacion);
         pelicula.setDescripcion(dto.getDescripcion());
+        pelicula.setTrailer(dto.getTrailer());
+        pelicula.setAnio(dto.getAnio());
         pelicula.setCreadoPor(usuario);
 
         if (dto.getPoster() != null && !dto.getPoster().isEmpty()) {
@@ -111,50 +143,42 @@ public class PeliculaServiceImpl implements PeliculaService {
         if (pelicula != null && pelicula.getPoster() != null) {
             cloudinaryService.deleteImage(pelicula.getPoster());
         }
-        
-        // 🔥 1. BORRAR RELACIONES (tabla intermedia)
+
         peliculaGeneroRepository.deleteByPeliculaId(id);
-        
         peliculaRepository.deleteById(id);
     }
 
-private PeliculaResponseDTO mapToDTO(Pelicula p) {
-
-    PeliculaResponseDTO dto = new PeliculaResponseDTO();
-
-    dto.setIdPelicula(p.getIdPelicula());
-    dto.setNombre(p.getNombre());
-    dto.setDuracion(p.getDuracion());
-    dto.setClasificacion(p.getClasificacion().getNombre());
-    dto.setDescripcion(p.getDescripcion());
-    dto.setPoster(p.getPoster());
-    dto.setCreadoPor(p.getCreadoPor().getNombre());
-    
-    // Configurar idClasificacion para que el frontend pueda preseleccionarlo al editar
-    if (p.getClasificacion() != null) {
-        dto.setIdClasificacion(p.getClasificacion().getId_clasificacion());
+    private PeliculaResponseDTO mapToDTOWithGeneros(
+            Pelicula p, List<String> generos, List<Integer> generosIds) {
+        PeliculaResponseDTO dto = buildBaseDTO(p);
+        dto.setGeneros(generos);
+        dto.setGenerosIds(generosIds);
+        return dto;
     }
 
-    // 🔥 AQUÍ YA NO FALLA
-    List<String> generos = peliculaGeneroRepository
-            .findGenerosByPeliculaId(p.getIdPelicula());
-            
-    List<Integer> generosIds = peliculaGeneroRepository
-            .findGeneroIdsByPeliculaId(p.getIdPelicula());
+    private PeliculaResponseDTO mapToDTO(Pelicula p) {
+        PeliculaResponseDTO dto = buildBaseDTO(p);
+        dto.setGeneros(peliculaGeneroRepository.findGenerosByPeliculaId(p.getIdPelicula()));
+        dto.setGenerosIds(peliculaGeneroRepository.findGeneroIdsByPeliculaId(p.getIdPelicula()));
+        return dto;
+    }
 
-    dto.setGeneros(generos);
-    dto.setGenerosIds(generosIds);
-
-
-    
-
-    return dto;
-
-
-
-    
-
-}
+    private PeliculaResponseDTO buildBaseDTO(Pelicula p) {
+        PeliculaResponseDTO dto = new PeliculaResponseDTO();
+        dto.setIdPelicula(p.getIdPelicula());
+        dto.setNombre(p.getNombre());
+        dto.setDuracion(p.getDuracion());
+        dto.setClasificacion(p.getClasificacion().getNombre());
+        dto.setDescripcion(p.getDescripcion());
+        dto.setPoster(p.getPoster());
+        dto.setTrailer(p.getTrailer());
+        dto.setAnio(p.getAnio());
+        dto.setCreadoPor(p.getCreadoPor().getNombre());
+        if (p.getClasificacion() != null) {
+            dto.setIdClasificacion(p.getClasificacion().getId_clasificacion());
+        }
+        return dto;
+    }
 
 
 

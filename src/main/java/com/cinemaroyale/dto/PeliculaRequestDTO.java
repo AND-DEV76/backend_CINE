@@ -11,7 +11,9 @@ public class PeliculaRequestDTO {
     private Integer duracion;
     private Integer idClasificacion;
     private String descripcion;
-    private MultipartFile poster; // aquí viene la imagen
+    private MultipartFile poster;
+    private String trailer;
+    private Integer anio;
     private Integer creadoPor;
     
 }

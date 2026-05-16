@@ -3,6 +3,8 @@ package com.cinemaroyale.service;
 import com.cinemaroyale.dto.BoletoDTO;
 import com.cinemaroyale.dto.CompraDTO;
 import com.cinemaroyale.model.*;
+import com.cinemaroyale.payment.PaymentGateway;
+import com.cinemaroyale.payment.PaymentResult;
 import com.cinemaroyale.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,15 +34,17 @@ public class CompraServiceImpl implements CompraService {
     private AsientoRepository asientoRepository;
     @Autowired
     private EstadoAsientoRepository estadoAsientoRepository;
+    @Autowired
+    private PaymentGateway paymentGateway;
 
     @Override
     @Transactional
     public List<BoletoDTO> procesarCompra(CompraDTO dto) {
-        // 1. Obtener Usuario
+        // 1. Obtener usuario
         Usuario usuario = usuarioRepository.findById(dto.getIdUsuario())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // 2. Obtener o crear Cliente
+        // 2. Obtener o crear cliente
         Cliente cliente = clienteRepository.findByUsuarioIdUsuario(usuario.getIdUsuario())
                 .orElseGet(() -> {
                     Cliente nuevoCliente = new Cliente();
@@ -48,65 +52,95 @@ public class CompraServiceImpl implements CompraService {
                     return clienteRepository.save(nuevoCliente);
                 });
 
-        // 3. Obtener Método de Pago y Función
+        // 3. Obtener metodo de pago y funcion
         MetodoPago metodoPago = metodoPagoRepository.findById(dto.getIdMetodoPago())
-                .orElseThrow(() -> new RuntimeException("Método de pago no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Metodo de pago no encontrado"));
         Funcion funcion = funcionRepository.findById(dto.getIdFuncion())
-                .orElseThrow(() -> new RuntimeException("Función no encontrada"));
+                .orElseThrow(() -> new RuntimeException("Funcion no encontrada"));
 
-        // 4. Verificar disponibilidad de asientos
+        // 4. Verificar disponibilidad con bloqueo pesimista
         for (Integer idAsiento : dto.getIdAsientos()) {
-            EstadoAsiento estado = estadoAsientoRepository.findByFuncionIdFuncionAndAsientoIdAsiento(funcion.getIdFuncion(), idAsiento)
-                    .orElseThrow(() -> new RuntimeException("Asiento no válido para esta función"));
-            if (!"DISPONIBLE".equals(estado.getEstado())) {
-                throw new RuntimeException("El asiento " + estado.getAsiento().getFila() + estado.getAsiento().getNumero() + " ya está ocupado");
+            EstadoAsiento estado = estadoAsientoRepository
+                    .findForUpdate(funcion.getIdFuncion(), idAsiento)
+                    .orElseThrow(() -> new RuntimeException("Asiento no valido para esta funcion"));
+
+            // Aceptar si esta DISPONIBLE o RESERVADO por este usuario
+            boolean disponible = "DISPONIBLE".equals(estado.getEstado());
+            boolean reservadoPorEsteUsuario = "RESERVADO".equals(estado.getEstado())
+                    && dto.getIdUsuario().equals(estado.getReservadoPor());
+
+            if (!disponible && !reservadoPorEsteUsuario) {
+                throw new RuntimeException("El asiento " + estado.getAsiento().getFila()
+                        + estado.getAsiento().getNumero() + " ya esta ocupado");
             }
         }
 
-        // 5. Crear Compra
+        // 5. Procesar pago a traves de la pasarela
+        PaymentResult paymentResult = paymentGateway.processPayment(
+                dto.getTotal(), dto.getIdMetodoPago(), dto.getIdUsuario());
+
+        // 6. Crear compra con estado segun resultado del pago
         Compra compra = new Compra();
         compra.setCliente(cliente);
         compra.setMetodoPago(metodoPago);
         compra.setTotal(dto.getTotal());
+        compra.setTransaccionRef(paymentResult.getTransactionRef());
+        compra.setGatewayResponse(paymentResult.getMessage());
+
+        if (!paymentResult.isApproved()) {
+            compra.setEstado("RECHAZADA");
+            compraRepository.save(compra);
+
+            // Liberar asientos reservados por este usuario
+            List<EstadoAsiento> reservados = estadoAsientoRepository
+                    .findByFuncionAndReservadoPor(funcion.getIdFuncion(), dto.getIdUsuario());
+            for (EstadoAsiento e : reservados) {
+                e.setEstado("DISPONIBLE");
+                e.setReservadoHasta(null);
+                e.setReservadoPor(null);
+                estadoAsientoRepository.save(e);
+            }
+
+            throw new RuntimeException("Pago rechazado: " + paymentResult.getMessage());
+        }
+
         compra.setEstado("COMPLETADA");
         Compra compraGuardada = compraRepository.save(compra);
 
-        // 6. Crear Boletos y actualizar estado
-        List<Boleto> boletosCreados = new ArrayList<>();
+        // 7. Crear boletos y marcar asientos como OCUPADO en batch
         BigDecimal precioPorBoleto = dto.getTotal().divide(new BigDecimal(dto.getIdAsientos().size()));
+        List<EstadoAsiento> estadosAOcupar = new ArrayList<>();
+        List<Boleto> boletosACrear = new ArrayList<>();
 
         for (Integer idAsiento : dto.getIdAsientos()) {
-            // Actualizar estado
-            EstadoAsiento estado = estadoAsientoRepository.findByFuncionIdFuncionAndAsientoIdAsiento(funcion.getIdFuncion(), idAsiento).get();
+            EstadoAsiento estado = estadoAsientoRepository
+                    .findByFuncionIdFuncionAndAsientoIdAsiento(funcion.getIdFuncion(), idAsiento).get();
             estado.setEstado("OCUPADO");
-            estadoAsientoRepository.save(estado);
+            estado.setReservadoHasta(null);
+            estado.setReservadoPor(null);
+            estadosAOcupar.add(estado);
 
-            // Crear boleto
             Boleto boleto = new Boleto();
             boleto.setFuncion(funcion);
             boleto.setAsiento(estado.getAsiento());
             boleto.setCompra(compraGuardada);
             boleto.setPrecio(precioPorBoleto);
             boleto.setEstado("ACTIVO");
-            boletosCreados.add(boletoRepository.save(boleto));
+            boletosACrear.add(boleto);
         }
 
-        // 7. Retornar DTOs
+        estadoAsientoRepository.saveAll(estadosAOcupar);
+        List<Boleto> boletosCreados = boletoRepository.saveAll(boletosACrear);
+
         return boletosCreados.stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     @Override
     public List<BoletoDTO> obtenerBoletosPorUsuario(Integer idUsuario) {
-        Cliente cliente = clienteRepository.findByUsuarioIdUsuario(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
-        
-        List<Compra> compras = compraRepository.findByClienteIdCliente(cliente.getIdCliente());
-        List<Boleto> boletos = new ArrayList<>();
-        for (Compra compra : compras) {
-            boletos.addAll(boletoRepository.findByCompraIdCompra(compra.getIdCompra()));
-        }
-
-        return boletos.stream().map(this::mapToDTO).collect(Collectors.toList());
+        return boletoRepository.findAllByUsuarioId(idUsuario)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     private BoletoDTO mapToDTO(Boleto b) {

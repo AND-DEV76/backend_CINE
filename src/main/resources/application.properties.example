@@ -1,0 +1,31 @@
+# ──────────────────────────────────────────────────
+# Cinema Royale — Properties de referencia (Backend)
+# ──────────────────────────────────────────────────
+# Copia este archivo como application.properties y completa los valores.
+# Para credenciales locales sensibles, usa application-local.properties.
+
+spring.application.name=cinemaroyale
+server.port=${PORT:8080}
+
+# Conexion a SQL Server
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=CinemaRoyale;encrypt=true;trustServerCertificate=true;sendTimeAsDatetime=false
+spring.datasource.username=sa
+spring.datasource.password=TU_PASSWORD
+spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+# JPA
+spring.jpa.hibernate.ddl-auto=none
+spring.sql.init.mode=never
+spring.jpa.show-sql=true
+spring.jpa.database-platform=org.hibernate.dialect.SQLServerDialect
+spring.jpa.hibernate.naming.physical-strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+# Multipart (upload de imagenes)
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=5MB
+
+# Cloudinary (obtener de https://console.cloudinary.com/)
+cloudinary.cloud-name=TU_CLOUD_NAME
+cloudinary.api-key=TU_API_KEY
+cloudinary.api-secret=TU_API_SECRET

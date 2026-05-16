@@ -14,24 +14,23 @@ import com.cinemaroyale.model.PeliculaGeneroId;
 import jakarta.transaction.Transactional;
 
 @Repository
-public interface PeliculaGeneroRepository  extends JpaRepository<PeliculaGenero, PeliculaGeneroId> {
+public interface PeliculaGeneroRepository extends JpaRepository<PeliculaGenero, PeliculaGeneroId> {
 
-     
     @Query("SELECT COUNT(pg) > 0 FROM PeliculaGenero pg WHERE pg.genero.id_genero = :id")
     boolean existsByGeneroId(@Param("id") Integer id);
 
-
     @Modifying
-@Transactional
-@Query("DELETE FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula = :id")
-void deleteByPeliculaId(@Param("id") Integer id);
+    @Transactional
+    @Query("DELETE FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula = :id")
+    void deleteByPeliculaId(@Param("id") Integer id);
 
+    @Query("SELECT pg.genero.nombre FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula = :id")
+    List<String> findGenerosByPeliculaId(@Param("id") Integer id);
 
-@Query("SELECT pg.genero.nombre FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula = :id")
-List<String> findGenerosByPeliculaId(@Param("id") Integer id);
+    @Query("SELECT pg.genero.id_genero FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula = :id")
+    List<Integer> findGeneroIdsByPeliculaId(@Param("id") Integer id);
 
-@Query("SELECT pg.genero.id_genero FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula = :id")
-List<Integer> findGeneroIdsByPeliculaId(@Param("id") Integer id);
-
-
-}
+    // Obtiene nombre e id de genero para multiples peliculas en una sola query
+    @Query("SELECT pg.pelicula.idPelicula, pg.genero.nombre, pg.genero.id_genero FROM PeliculaGenero pg WHERE pg.pelicula.idPelicula IN :ids")
+    List<Object[]> findGeneroDataByPeliculaIds(@Param("ids") List<Integer> ids);
+}

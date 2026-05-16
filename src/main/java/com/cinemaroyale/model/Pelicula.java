@@ -31,8 +31,14 @@ public class Pelicula {
     @Column(columnDefinition = "VARCHAR(MAX)", name = "descripcion") // ESTA LÍNEA ES LA CLAVE para el imges
     private String descripcion;
 
-    @Column(name = "poster") //  ESTA LÍNEA ES LA CLAVE para el imges
-    private String poster; // nombre de la imagen
+    @Column(name = "poster")
+    private String poster;
+
+    @Column(name = "trailer", length = 500)
+    private String trailer;
+
+    @Column(name = "anio")
+    private Integer anio;
 
     @ManyToOne
     @JoinColumn(name = "creado_por", nullable = false)

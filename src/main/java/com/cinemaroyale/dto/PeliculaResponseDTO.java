@@ -14,6 +14,8 @@ public class PeliculaResponseDTO {
     private String clasificacion;
     private String descripcion;
     private String poster;
+    private String trailer;
+    private Integer anio;
     private String creadoPor;
     private List<String> generos;
     private List<Integer> generosIds;

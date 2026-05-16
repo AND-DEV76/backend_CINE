@@ -13,11 +13,6 @@ import java.util.Optional;
 @Repository
 public interface FuncionRepository extends JpaRepository<Funcion, Integer> {
 
-    Optional<Funcion> findBySala_IdSalaAndFechaHora(
-            Integer idSala,
-            LocalDateTime fechaHora
-    );
-
     @Query("""
         SELECT f FROM Funcion f
         WHERE f.sala.idSala = :idSala
@@ -28,5 +23,20 @@ public interface FuncionRepository extends JpaRepository<Funcion, Integer> {
             @Param("fechaHora") LocalDateTime fechaHora
     );
 
-    List<Funcion> findByPeliculaIdPelicula(Integer idPelicula);
+    // Una sola consulta con JOIN para evitar N+1 al listar por pelicula
+    @Query("""
+        SELECT f FROM Funcion f
+        JOIN FETCH f.pelicula p
+        JOIN FETCH f.sala s
+        WHERE f.pelicula.idPelicula = :idPelicula
+    """)
+    List<Funcion> findByPeliculaIdPelicula(@Param("idPelicula") Integer idPelicula);
+
+    // Una sola consulta con JOIN para listar todas las funciones
+    @Query("""
+        SELECT f FROM Funcion f
+        JOIN FETCH f.pelicula p
+        JOIN FETCH f.sala s
+    """)
+    List<Funcion> findAllWithJoins();
 }

@@ -72,15 +72,16 @@ public class FuncionServiceImpl implements FuncionService {
 
         Funcion funcionGuardada = funcionRepo.save(funcion);
 
-        // Crear EstadoAsiento para todos los asientos de la sala
+        // Crear EstadoAsiento para todos los asientos de la sala en un solo batch
         List<Asiento> asientos = asientoRepo.findBySala_IdSala(sala.getIdSala());
-        for (Asiento asiento : asientos) {
+        List<EstadoAsiento> estados = asientos.stream().map(asiento -> {
             EstadoAsiento estado = new EstadoAsiento();
             estado.setFuncion(funcionGuardada);
             estado.setAsiento(asiento);
             estado.setEstado("DISPONIBLE");
-            estadoAsientoRepo.save(estado);
-        }
+            return estado;
+        }).collect(Collectors.toList());
+        estadoAsientoRepo.saveAll(estados);
 
         return mapToDTO(funcionGuardada);
     }
@@ -90,7 +91,7 @@ public class FuncionServiceImpl implements FuncionService {
     // =========================
     @Override
     public List<FuncionResponseDTO> listar() {
-        return funcionRepo.findAll()
+        return funcionRepo.findAllWithJoins()
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());

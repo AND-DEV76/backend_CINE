@@ -91,15 +91,26 @@ public class UsuarioService {
 
     public Usuario login(UsuarioDTO dto) {
 
-    Usuario user = usuarioRepository.findByUsername(dto.getUsername())
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        String identifier = dto.getUsername();
+        Usuario user = null;
 
-    String hashed = hashPassword(dto.getPassword());
+        // Si contiene arroba, intentar buscar por email
+        if (identifier != null && identifier.contains("@")) {
+            user = usuarioRepository.findByEmail(identifier).orElse(null);
+        }
 
-    if (!user.getPasswordHash().equals(hashed)) {
-        throw new RuntimeException("Credenciales incorrectas");
+        // Si no se encontró por email o no tenía arroba, buscar por username
+        if (user == null) {
+            user = usuarioRepository.findByUsername(identifier)
+                    .orElseThrow(() -> new RuntimeException("Usuario o correo no encontrado"));
+        }
+
+        String hashed = hashPassword(dto.getPassword());
+
+        if (!user.getPasswordHash().equals(hashed)) {
+            throw new RuntimeException("Credenciales incorrectas");
+        }
+
+        return user;
     }
-
-    return user;
-}
 }

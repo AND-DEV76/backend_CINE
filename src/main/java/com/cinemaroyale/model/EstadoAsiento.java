@@ -21,5 +21,11 @@ public class EstadoAsiento {
     private Asiento asiento;
 
     @Column(nullable = false)
-    private String estado = "DISPONIBLE"; // DISPONIBLE, OCUPADO, SELECCIONADO
+    private String estado = "DISPONIBLE"; // DISPONIBLE, RESERVADO, OCUPADO
+
+    @Column(name = "reservado_hasta")
+    private java.time.LocalDateTime reservadoHasta;
+
+    @Column(name = "reservado_por")
+    private Integer reservadoPor;
 }

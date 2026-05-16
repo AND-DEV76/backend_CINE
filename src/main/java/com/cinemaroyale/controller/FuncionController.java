@@ -63,11 +63,4 @@ public class FuncionController {
     public ResponseEntity<List<EstadoAsientoDTO>> obtenerAsientos(@PathVariable Integer id) {
         return ResponseEntity.ok(estadoAsientoService.listarPorFuncion(id));
     }
-
-    // 🔥 Endpoint temporal para arreglar asientos de funciones creadas manualmente sin asientos
-    @GetMapping("/fix-asientos")
-    public ResponseEntity<String> fixAsientos() {
-        service.fixAsientos();
-        return ResponseEntity.ok("Asientos arreglados");
-    }
 }

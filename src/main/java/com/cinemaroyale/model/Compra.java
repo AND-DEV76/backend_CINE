@@ -30,4 +30,10 @@ public class Compra {
 
     @Column(nullable = false)
     private String estado = "COMPLETADA";
+
+    @Column(name = "transaccion_ref", length = 100)
+    private String transaccionRef;
+
+    @Column(name = "gateway_response", length = 500)
+    private String gatewayResponse;
 }
